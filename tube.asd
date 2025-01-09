@@ -5,8 +5,13 @@
   :depends-on ("binding-arrows"
                "xmls"
                "dexador"
-               "str")
+               "str"
+               "mito"
+               "croatoan")
   :components ((:module "src"
                 :components
                 ((:file "package")
+                 (:file "xml")
+                 (:file "db")
+                 (:file "yt-dlp")
                  (:file "main")))))
