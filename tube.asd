@@ -7,6 +7,7 @@
                "dexador"
                "str"
                "mito"
+               "local-time"
                "croatoan")
   :components ((:module "src"
                 :components

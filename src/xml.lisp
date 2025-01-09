@@ -16,25 +16,42 @@
   (let ((resp (handler-case (dex:get url) (dex:http-request-not-found () 'NOT-FOUND))))
     (flet ((get-name (pxml)
              (->> pxml
-               (xmls:extract-path '("feed" "title"))
+               (xmls:extract-path '("feed" "author" "name"))
                (xmls:node->nodelist)
                (last)
                (first)))
-           (get-vid-urls (pxml)
-             (-<> pxml
-               (xmls:extract-path '("feed") <>)
-               (xmls:node->nodelist <>)
-               (subseq <> 9)
-               (mapcar (lambda (entry) (-<> entry
-                                         (subseq <> 5 7)
-                                         (mapcar (lambda (item) (cdr item)) <>)))
-                       <>)
-               (loop :for (title-node url-node) :in <>
-                     :collect (list (cadr title-node) (cadaar url-node))))))
+           (get-url (pxml)
+             (->> pxml
+               (xmls:extract-path '("feed" "author" "uri"))
+               (xmls:node->nodelist)
+               (last)
+               (first)))
+           (get-vid (pxml)
+             (let* ((flat-video-entries
+                      (-<>
+                        pxml
+                        (xmls:extract-path '("feed") <>)
+                        (xmls:node->nodelist)
+                        (subseq <> 9)
+                        (mapcar
+                         (lambda (e)
+                           (-<> e
+                             (mapcar (lambda (e) (cdr e)) <>)
+                             (remove-if #'stringp <>)
+                             (mapcar (lambda (e) (cdr e)) <>)
+                             (alexandria:flatten <>)))
+                         <>))))
+                    (mapcar (lambda (v)
+                              (let ((title (nth 3 v))
+                                    (url (nth 24 v))
+                                    (publishedAt (nth 11 v))
+                                    (thumbnail (nth 32 v)))
+                                (list title url publishedAt thumbnail)))
+                            flat-video-entries))))
 
       (unless (eql resp 'NOT-FOUND)
         (let ((parsed-xml (xmls:parse resp)))
-          (list (get-name parsed-xml) (get-vid-urls parsed-xml)))))))
+          (list (get-name parsed-xml) (get-url parsed-xml) (get-vid parsed-xml)))))))
 
 (defun opml-file->all-channels-info (file-path)
   (mapcar
