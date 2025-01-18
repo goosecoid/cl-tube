@@ -23,10 +23,8 @@
        (mito:migrate-table table)))
    '(channel video))
 
-  (populate-db-with-channels-info)
-  ;; (unless (mito:find-dao 'channel)
-  ;;  (populate-db-with-channels-info))
-  )
+  (unless (mito:find-dao 'channel)
+   (populate-db-with-channels-info)))
 
 (defun populate-db-with-channels-info ()
     ;; TODO: command-line arg
@@ -35,13 +33,7 @@
       (mapc (lambda (c)
               (let* ((channel (create-channel (car c) (cadr c)))
                     (videos (mapcar
-                             (lambda (v)
-                               (create-video
-                                (car v)
-                                (cadr v)
-                                (caddr v)
-                                (cadddr v)
-                                channel))
+                             (lambda (v) (create-video v channel))
                              (caddr c))))
                 (mito:insert-dao channel)
                 (mapc #'mito:insert-dao videos)))
@@ -50,13 +42,13 @@
 (defun create-channel (name url)
   (make-instance 'channel :name name :url url))
 
-(defun create-video (title url published_at thumbnail channel)
+(defun create-video (video-data channel)
   (make-instance
    'video
-   :title title
-   :url url
-   :published_at (local-time:parse-timestring published_at)
-   :thumbnail thumbnail
+   :title (car video-data)
+   :url (cadr video-data)
+   :published_at (local-time:parse-timestring (caddr video-data))
+   :thumbnail (cadddr video-data)
    :channel channel))
 
 (defun get-channels ()
@@ -67,3 +59,9 @@
 
 (defun get-videos-for-channel (channel)
   (mito:retrieve-dao 'video :channel channel))
+
+(defun get-latest-videos ()
+  (->
+    (mito:retrieve-dao 'video)
+    (sort #'local-time:timestamp>
+          :key (lambda (v) (slot-value v 'publishedat)))))

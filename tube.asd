@@ -14,5 +14,6 @@
                 ((:file "package")
                  (:file "xml")
                  (:file "db")
+                 (:file "curses")
                  (:file "yt-dlp")
                  (:file "main")))))
